@@ -1,0 +1,33 @@
+#!/bin/bash
+
+# Exit script on any non-zero exit status.
+set -e
+
+echo ""
+echo "--- Preparing Terraform ---"
+
+gcloud config list
+read -rp "Proceed with this configuration? [y/N] " response
+if ! [[ "$response" =~ ^([yY][eE][sS]|[yY])$ ]]
+then
+    exit 1
+fi
+
+project_id=$(gcloud config get-value project 2> /dev/null)
+state_bucket="terraform-state-${project_id}"
+
+# Prepare the terraform state bucket.
+gcloud storage buckets create "gs://${state_bucket}" --location=EUROPE-NORTH1
+gsutil versioning set on "gs://${state_bucket}"
+
+# Enable the required APIs.
+gcloud services enable run.googleapis.com
+
+# For copy-pasting when terraform sets up remote state.
+echo ""
+echo "Terraform Remote State Bucket Name: ${state_bucket} <-- COPY ME"
+echo ""
+
+# Creates and/or appends variables to terraform.tfvars
+echo "project = \"${project_id}\"" >> terraform.tfvars
+echo "location = \"europe-north1\"" >> terraform.tfvars

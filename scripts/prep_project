@@ -1,0 +1,43 @@
+#!/bin/bash
+
+# Exit script on any non-zero exit status.
+set -e
+
+echo ""
+echo "--- Preparing GCP Project ---"
+
+read -rp "Enter Project ID: " project_id
+if [[ -z ${project_id} ]]
+then
+    echo "Invalid Project ID: Empty"
+    exit 1
+fi
+
+read -rp "Enter Organization Number: " organization_number
+if [[ -z ${organization_number} ]]
+then
+    echo "Invalid Organization Number: Empty"
+    exit 1
+fi
+
+read -rp "Enter Billing Account: " billing_account
+if [[ -z ${billing_account} ]]
+then
+    echo "Invalid Billing Account: Empty"
+    exit 1
+fi
+
+# Create the GPC project and enable billing.
+gcloud projects create "${project_id}" --organization="${organization_number}"
+gcloud beta billing projects link "${project_id}" --billing-account="${billing_account}"
+
+read -rp "Enter Configuration Name: " configuration_name
+if [[ -z ${configuration_name} ]]
+then
+    echo "Invalid Configuration Name: Empty"
+    exit 1
+fi
+
+gcloud config configurations create "${configuration_name}"
+gcloud config set project "${project_id}"
+gcloud config set account "$(gcloud auth list --filter=status:ACTIVE --format="value(account)")"
